@@ -1708,8 +1708,10 @@ int f2fs_gc(struct f2fs_sb_info *sbi, bool sync,
 	int gc_type = sync ? FG_GC : BG_GC;
 	int sec_freed = 0, seg_freed = 0, total_freed = 0;
 	int ret = 0;
-	struct cp_control cpc;
-	unsigned int init_segno = segno;
+        unsigned int init_segno = segno;
+	struct cp_control cpc = {
+		.reason = CP_SYNC,
+};
 	struct gc_inode_list gc_list = {
 		.ilist = LIST_HEAD_INIT(gc_list.ilist),
 		.iroot = RADIX_TREE_INIT(gc_list.iroot, GFP_NOFS),
