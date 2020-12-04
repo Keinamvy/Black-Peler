@@ -54,11 +54,6 @@
 
 #include "cp_qc30.h"
 
-#ifdef pr_debug
-#undef pr_debug
-#define pr_debug pr_err
-#endif
-
 #ifdef pr_info
 #undef pr_info
 #define pr_info pr_err
