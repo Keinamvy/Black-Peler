@@ -738,6 +738,8 @@ ARCH_AFLAGS :=
 ARCH_CFLAGS :=
 include arch/$(SRCARCH)/Makefile
 
+OPT_FLAGS := -O3 -march=armv8.2-a+dotprod -mcpu=cortex-a55+crypto+crc -mtune=cortex-a55
+
 KBUILD_CFLAGS	+= $(call cc-option,-fno-delete-null-pointer-checks,)
 KBUILD_CFLAGS	+= $(call cc-disable-warning,frame-address,)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, format-truncation)
@@ -754,11 +756,6 @@ KBUILD_CFLAGS   += -O2
 else ifdef CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE_O3
 KBUILD_CFLAGS   += -O3 -ffast-math
 else ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
-KBUILD_CFLAGS   += -Os
-ifeq ($(cc-name),clang)
-KBUILD_CFLAGS += -mcpu=cortex-a76+crc+crypto -mtune=cortex-a76 -march=armv8.2-a+crc+crypto+lse+rdm+rcpc+dotprod -O3 -funroll-loops
-KBUILD_AFLAGS += -mcpu=cortex-a76+crc+crypto -mtune=cortex-a76 -march=armv8.2-a+crc+crypto+lse+rdm+rcpc+dotprod -O3 -funroll-loops
-endif
 
 ifdef CONFIG_LLVM_POLLY
 KBUILD_CFLAGS	+= -mllvm -polly \
@@ -773,6 +770,13 @@ KBUILD_CFLAGS	+= -mllvm -inline-threshold=2000
 KBUILD_CFLAGS	+= -mllvm -inlinehint-threshold=3000
 KBUILD_CFLAGS   += -mllvm -unroll-threshold=1200
 KBUILD_LDFLAGS  += --plugin-opt=-import-instr-limit=40
+endif
+KBUILD_CFLAGS	+= $(OPT_FLAGS)
+KBUILD_AFLAGS   += $(OPT_FLAGS)
+ifdef CONFIG_LTO_CLANG
+KBUILD_LDFLAGS += --plugin-opt=O3 --strip-debug -march=armv8.2-a+dotprod -mcpu=cortex-a55+crypto+crc -mtune=cortex-a55
+else
+KBUILD_LDFLAGS += $(OPT_FLAGS)
 endif
 endif
 
