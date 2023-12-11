@@ -3,7 +3,7 @@
   * Core layer of touchdriver architecture.
   *
   * Copyright (C) 2019 - 2020 Goodix, Inc.
- * Copyright (C) 2021 XiaoMi, Inc.
+  * Copyright (C) 2021 XiaoMi, Inc.
   *
   * This program is free software; you can redistribute it and/or modify
   * it under the terms of the GNU General Public License as published by
@@ -1032,8 +1032,8 @@ static void goodix_ts_proc_exit(struct goodix_ts_core *core_data)
 	proc_remove(core_data->tp_data_dump_proc);
 }
 static void goodix_ts_wq_exit(struct goodix_ts_core *core_data)
-{   
-    destroy_workqueue(core_data->power_supply_wq);
+{
+	destroy_workqueue(core_data->power_supply_wq);
 	destroy_workqueue(core_data->event_wq);
 	
 	destroy_workqueue(core_data->touch_gesture_wq);
@@ -1530,7 +1530,6 @@ static int goodix_ts_gpio_setup(struct goodix_ts_core *core_data)
 {
 	struct goodix_ts_board_data *ts_bdata = board_data(core_data);
 	int r = 0;
-	
 	/*
 	 * after kenerl3.13, gpio_ api is deprecated, new
 	 * driver should use gpiod_ api.
@@ -2131,10 +2130,12 @@ static void goodix_power_supply_work(struct work_struct *work)
     if (!core_data)
 		return;
 
-	if (atomic_read(&core_data->suspended) == 1 && !core_data->gesture_enabled) {
+	if (core_data == NULL)
+		return;
+	if ((atomic_read(&core_data->suspended) == 1) && core_data->gesture_enabled == 0) {
 		return;
 	}
-	
+
 	if (!core_data->battery_psy) {
 		ts_err("battery psy is NULL, something error!!");
 		return;
@@ -2143,7 +2144,7 @@ static void goodix_power_supply_work(struct work_struct *work)
 	ret = power_supply_get_property(core_data->battery_psy, POWER_SUPPLY_PROP_STATUS, &cur_chgr);
 	if (ret < 0) {
 		ts_err("get psy property failed!!, skip charger mode handler");
-		goto out;;
+		goto out;
 	}
 
 	switch (cur_chgr.intval) {
@@ -2675,6 +2676,37 @@ out:
 static const struct file_operations gtp_data_dump_ops = {
 	.read = goodix_data_dump_read,
 };
+#define TOUCH_OS_TEST    "ctp_openshort_test"
+#define TOUCH_PROC_DIR      "touchscreen"
+#define TOUCH_OS_LOCKDOWN	"lockdown_info"
+
+#define SELF_TEST_NG	0
+#define SELF_TEST_OK	1
+struct proc_dir_entry *goodix_touch_proc_dir;
+EXPORT_SYMBOL(goodix_touch_proc_dir);
+static ssize_t gtp_selftest_read(struct file *file, char __user *buf,
+			size_t count, loff_t *pos)
+{
+	int retval = 0;
+	int ret;
+	char temp_buf[256] = {0};
+
+	retval = goodix_short_open_test();
+	if (2 != retval)
+		ret = SELF_TEST_NG;
+	else
+		ret = SELF_TEST_OK;
+
+	snprintf(temp_buf, 256, "result=%d\n", ret);
+
+	return simple_read_from_buffer(buf, count, pos, temp_buf, strlen(temp_buf));
+}
+
+static const struct file_operations gtp_openshort_ops = {
+	.read = gtp_selftest_read,
+	.open  = simple_open,
+	.owner = THIS_MODULE,
+};
 
 #ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 static struct xiaomi_touch_interface xiaomi_touch_interfaces;
@@ -3164,6 +3196,11 @@ static int goodix_ts_probe(struct platform_device *pdev)
 	if (r < 0)
 		goto out;
 
+	/* get GPIO resource */
+	r = goodix_ts_gpio_setup(core_data);
+	if (r < 0)
+		goto out;
+
 #ifdef CONFIG_PINCTRL
 	/* Pinctrl handle is optional. */
 	r = goodix_ts_pinctrl_init(core_data);
@@ -3193,20 +3230,15 @@ static int goodix_ts_probe(struct platform_device *pdev)
 		ts_info("Failed start cfg_bin_proc");
 		goto out;
 	}
-    
-    core_data->power_supply_wq = alloc_workqueue("gtp-power-supply-queue",
+
+	core_data->power_supply_wq = alloc_workqueue("gtp-power-supply-queue",
 				WQ_UNBOUND | WQ_HIGHPRI | WQ_CPU_INTENSIVE, 1);
 	if (!core_data->power_supply_wq) {
 		ts_err("goodix cannot create power supply work thread");
 		r = -ENOMEM;
 		goto out;
 	}
-	
-	core_data->event_wq = alloc_workqueue("gtp-event-queue",
-				WQ_UNBOUND | WQ_HIGHPRI | WQ_CPU_INTENSIVE, 1);
-	if (!core_data->event_wq) {
 		ts_err("goodix cannot create event work thread");
-		r = -ENOMEM;
 		goto out;
 	}
 
@@ -3262,6 +3294,11 @@ static int goodix_ts_probe(struct platform_device *pdev)
 		debugfs_create_file("switch_state", 0660, core_data->debugfs, core_data,
 					&tpdbg_operations);
 	}
+	//for WT factory
+	goodix_touch_proc_dir = proc_mkdir(TOUCH_PROC_DIR, NULL);
+	proc_create_data(TOUCH_OS_TEST , 0777, goodix_touch_proc_dir, &gtp_openshort_ops, core_data);
+	proc_create_data(TOUCH_OS_LOCKDOWN, 0777, goodix_touch_proc_dir, &goodix_lockdown_info_ops, core_data);
+
 #ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	core_data->gtp_tp_class = get_xiaomi_touch_class();
 	if (!core_data->gtp_tp_class) {
