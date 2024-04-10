@@ -969,7 +969,7 @@ endif
 lto-clang-flags += -fvisibility=hidden
 
 # Limit inlining across translation units to reduce binary size
-KBUILD_LDFLAGS += -mllvm -import-instr-limit=5
+KBUILD_LDFLAGS += -mllvm -import-instr-limit=40
 
 KBUILD_LDFLAGS_MODULE += -T scripts/module-lto.lds
 
