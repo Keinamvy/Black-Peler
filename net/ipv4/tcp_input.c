@@ -89,6 +89,10 @@ int sysctl_tcp_challenge_ack_limit = 1000;
 
 int sysctl_tcp_stdurg __read_mostly;
 int sysctl_tcp_rfc1337 __read_mostly;
+#ifdef CONFIG_OPLUS_NWPOWER
+#include <net/oplus_nwpower.h>
+#endif
+
 int sysctl_tcp_max_orphans __read_mostly = NR_FILE;
 int sysctl_tcp_frto __read_mostly = 2;
 int sysctl_tcp_min_rtt_wlen __read_mostly = 300;
@@ -4814,6 +4818,9 @@ queue_and_out:
 
 	if (!after(TCP_SKB_CB(skb)->end_seq, tp->rcv_nxt)) {
 		/* A retransmit, 2nd most common case.  Force an immediate ack. */
+#ifdef CONFIG_OPLUS_NWPOWER
+		oplus_match_tcp_input_retrans(sk);
+#endif
 		NET_INC_STATS(sock_net(sk), LINUX_MIB_DELAYEDACKLOST);
 		tcp_dsack_set(sk, TCP_SKB_CB(skb)->seq, TCP_SKB_CB(skb)->end_seq);
 
@@ -5785,7 +5792,16 @@ static int tcp_rcv_synsent_state_process(struct sock *sk, struct sk_buff *skb,
 	struct tcp_fastopen_cookie foc = { .len = -1 };
 	int saved_clamp = tp->rx_opt.mss_clamp;
 	bool fastopen_fail;
+#ifdef CONFIG_OPLUS_NWPOWER
+	static int ts_error_count = 0;
+    int ts_error_threshold = sysctl_tcp_ts_control[0];
 
+    //when network change (frameworks set sysctl_tcp_ts_control[1] = 1), clear ts_error_count
+    if (sysctl_tcp_ts_control[1] == 1) {
+            ts_error_count = 0;
+            sysctl_tcp_ts_control[1] = 0;
+    }
+#endif
 	tcp_parse_options(sock_net(sk), skb, &tp->rx_opt, 0, &foc);
 	if (tp->rx_opt.saw_tstamp && tp->rx_opt.rcv_tsecr)
 		tp->rx_opt.rcv_tsecr -= tp->tsoffset;
@@ -5814,8 +5830,25 @@ static int tcp_rcv_synsent_state_process(struct sock *sk, struct sk_buff *skb,
 			     tcp_time_stamp(tp))) {
 			NET_INC_STATS(sock_net(sk),
 					LINUX_MIB_PAWSACTIVEREJECTED);
+#ifdef CONFIG_OPLUS_NWPOWER
+			//if count > threshold, disable TCP Timestamps
+			if (ts_error_threshold > 0) {
+				ts_error_count++;
+				if (ts_error_count >= ts_error_threshold) {
+					sock_net(sk)->ipv4.sysctl_tcp_timestamps = 0;
+					ts_error_count = 0;
+				}
+			}
+#endif
 			goto reset_and_undo;
+#ifdef CONFIG_OPLUS_NWPOWER
 		}
+		//if other connection's Timestamp is correct, the network environment may be OK
+        if (tp->rx_opt.saw_tstamp && tp->rx_opt.rcv_tsecr &&
+        ts_error_threshold > 0 && ts_error_count > 0) {
+        ts_error_count--;
+#endif
+        }
 
 		/* Now ACK is acceptable.
 		 *
