@@ -199,4 +199,4 @@ obj-$(CONFIG_GNSS)		+= gnss/
 obj-$(CONFIG_AINUR_DTS_SW) += dts_eagle/
 # DTS_EAGLE END
 
-obj-$(CONFIG_E404_OPLUS)		+= oplus/
+obj-$(CONFIG_OPLUS_PORT)		+= oplus/
