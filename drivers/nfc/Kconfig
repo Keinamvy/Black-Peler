@@ -76,6 +76,7 @@ config NFC_NQ_PN80T
           This is for i2c connected version. NCI protocol logic
           resides in the usermode and it has no other NFC dependencies.
 
+
 config NTAG_NQ
 	tristate "QTI NTAG Driver for NTAG communication"
 	depends on I2C

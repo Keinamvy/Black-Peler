@@ -4,6 +4,7 @@
  * Version: v1.0.0
  *
  * Copyright (c) 2019 AWINIC Technology CO., LTD
+ * Copyright (C) 2021 XiaoMi, Inc.
  *
  *  Author: Joseph <zhangzetao@awinic.com.cn>
  *
@@ -12,7 +13,6 @@
  * Free Software Foundation;  either version 2 of the  License, or (at your
  * option) any later version.
  */
-//#define DEBUG
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/i2c.h>
@@ -673,13 +673,13 @@ static int aw8624_haptic_set_repeat_wav_seq(struct aw8624 *aw8624,
 
 static unsigned char aw8624_haptic_set_level(struct aw8624 *aw8624, int gain)
 {
-    int val = 80;
+	int val = 80;
 
-    val = aw8624->ulevel * gain / 128;
-    if (val > 255)
-        val = 255;
+	val = aw8624->ulevel * gain / 128;
+	if (val > 255)
+		val = 255;
 
-    return val;
+	return val;
 }
 
 static int aw8624_haptic_set_gain(struct aw8624 *aw8624, unsigned char gain)
@@ -2230,7 +2230,7 @@ static irqreturn_t aw8624_irq(int irq, void *data)
 		pr_err("%s: chip over temperature int error\n", __func__);
 	}
 	if (reg_val & AW8624_BIT_SYSINT_DONEI) {
-		pr_info("%s chip playback done\n", __func__);
+		pr_debug("%s chip playback done\n", __func__);
 		/* mask donei */
 		aw8624_haptic_set_ram_donei(aw8624, false);
 	}
@@ -3882,7 +3882,7 @@ static DEVICE_ATTR(index, S_IWUSR | S_IRUGO, aw8624_index_show,
 static DEVICE_ATTR(gain, S_IWUSR | S_IRUGO, aw8624_gain_show,
 		   aw8624_gain_store);
 static DEVICE_ATTR(ulevel, 0644, aw8624_ulevel_show,
-                   aw8624_ulevel_store);
+		  aw8624_ulevel_store);
 static DEVICE_ATTR(seq, S_IWUSR | S_IRUGO, aw8624_seq_show, aw8624_seq_store);
 static DEVICE_ATTR(loop, S_IWUSR | S_IRUGO, aw8624_loop_show,
 		   aw8624_loop_store);
@@ -4092,7 +4092,11 @@ aw8624_i2c_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 		     HRTIMER_MODE_REL);
 	aw8624->hap_disable_timer.function = qti_hap_disable_timer;
 
+#ifdef CONFIG_INPUT_QTI_HAPTICS
 	input_dev->name = "aw8624_haptic";
+#else
+	input_dev->name = "qti-haptics";
+#endif
 	input_set_drvdata(input_dev, aw8624);
 	aw8624->input_dev = input_dev;
 	input_set_capability(input_dev, EV_FF, FF_CONSTANT);
@@ -4113,8 +4117,7 @@ aw8624_i2c_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 		return rc;
 	}
 	aw8624->work_queue =
-	    alloc_workqueue("aw8624_vibrator_work_queue",
-						WQ_UNBOUND | WQ_HIGHPRI, 0);
+	    create_singlethread_workqueue("aw8624_vibrator_work_queue");
 	if (!aw8624->work_queue) {
 		dev_err(&i2c->dev,
 			"%s: Error creating aw8624_vibrator_work_queue\n",
@@ -4241,4 +4244,3 @@ module_exit(aw8624_i2c_exit);
 
 MODULE_DESCRIPTION("AW8624 Haptic Driver");
 MODULE_LICENSE("GPL v2");
-
