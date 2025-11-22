@@ -229,8 +229,6 @@ And public attribution of xiaomi platforms(like F3 and so and)
 		ti,bq2597x,bus-ovp-alarm-threshold = <11000>;
 		ti,bq2597x,bus-ocp-threshold = <3750>;
 		ti,bq2597x,bus-ocp-alarm-threshold = <3500>;
-		ti,bq2597x,bus-ocp-threshold = <3750>;
-		ti,bq2597x,bus-ocp-alarm-threshold = <3500>;
 
 		//ti,bq2597x,bat-ucp-alarm-threshold = <2000>;
 

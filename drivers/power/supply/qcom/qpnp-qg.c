@@ -2105,8 +2105,6 @@ done:
 #ifdef CONFIG_K6_CHARGE
 #define FFC_CHG_TERM_SWD_CURRENT	-896
 #define FFC_CHG_TERM_NVT_CURRENT	-896
-#define FFC_BATT_FULL_NVT_CURRENT	1150000
-#define FFC_BATT_FULL_SWD_CURRENT	1150000
 #define FFC_BATT_FULL_CURRENT	920000
 #define FFC_BATT_FULL_NVT_CURRENT	925000
 #define FFC_BATT_FULL_SWD_CURRENT	880000
@@ -3606,9 +3604,9 @@ static int qg_load_battery_profile(struct qpnp_qg *chip)
 {
 	struct device_node *node = chip->dev->of_node;
 #ifdef CONFIG_K6_CHARGE
-	struct device_node *profile_node;
-#else
 	struct device_node *batt_node, *profile_node;
+	#else
+	struct device_node *profile_node;
 #endif
         int rc, tuple_len, len, i = 0;
 
