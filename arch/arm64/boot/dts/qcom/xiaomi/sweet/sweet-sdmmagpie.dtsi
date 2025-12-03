@@ -178,8 +178,8 @@ And public attribution of xiaomi platforms(like F3 and so and)
         ln8000_charger,bat-ovp-alarm-threshold = <4525>;
         ln8000_charger,bus-ovp-threshold = <13000>;
         ln8000_charger,bus-ovp-alarm-threshold = <11000>;
-        ln8000_charger,bus-ocp-threshold = <3750>;
-        ln8000_charger,bus-ocp-alarm-threshold = <3500>;
+        ln8000_charger,bus-ocp-threshold = <8000>;
+        ln8000_charger,bus-ocp-alarm-threshold = <7500>;
         ln8000_charger,ntc-alarm-cfg  = <226>;
 		/* protection enable/disable flags
 		 *   vbat-ovp-disable
@@ -227,8 +227,8 @@ And public attribution of xiaomi platforms(like F3 and so and)
 
 		ti,bq2597x,bus-ovp-threshold = <12000>;
 		ti,bq2597x,bus-ovp-alarm-threshold = <11000>;
-		ti,bq2597x,bus-ocp-threshold = <3750>;
-		ti,bq2597x,bus-ocp-alarm-threshold = <3500>;
+		ti,bq2597x,bus-ocp-threshold = <8200>;
+		ti,bq2597x,bus-ocp-alarm-threshold = <7500>;
 
 		//ti,bq2597x,bat-ucp-alarm-threshold = <2000>;
 
@@ -434,8 +434,8 @@ And public attribution of xiaomi platforms(like F3 and so and)
 
 		ti,bq2597x,bus-ovp-threshold = <12000>;
 		ti,bq2597x,bus-ovp-alarm-threshold = <11000>;
-		ti,bq2597x,bus-ocp-threshold = <3500>;
-		ti,bq2597x,bus-ocp-alarm-threshold = <3200>;
+		ti,bq2597x,bus-ocp-threshold = <8000>;
+		ti,bq2597x,bus-ocp-alarm-threshold = <7500>;
 
 		//ti,bq2597x,bat-ucp-alarm-threshold = <2000>;
 
@@ -463,8 +463,8 @@ And public attribution of xiaomi platforms(like F3 and so and)
         ln8000_charger,bat-ovp-alarm-threshold = <4525>;
         ln8000_charger,bus-ovp-threshold = <13000>;
         ln8000_charger,bus-ovp-alarm-threshold = <11000>;
-        ln8000_charger,bus-ocp-threshold = <3750>;
-        ln8000_charger,bus-ocp-alarm-threshold = <3500>;
+        ln8000_charger,bus-ocp-threshold = <8000>;
+        ln8000_charger,bus-ocp-alarm-threshold = <7500>;
         ln8000_charger,ntc-alarm-cfg  = <226>;
 		/* protection enable/disable flags
 		 *   vbat-ovp-disable
