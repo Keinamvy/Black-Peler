@@ -1,6 +1,0 @@
-config EXOTIC_RECLAIM
-	tristate "ExoticReclaim - Automatic cache cleaner"
-	default y
-	help
-	  Automatically drop system cache every 3 hours after boot,
-	  only when the screen is off for more than 10 minutes.
