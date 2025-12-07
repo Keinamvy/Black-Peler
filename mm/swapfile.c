@@ -951,17 +951,13 @@ int get_swap_pages(int n_goal, bool cluster, swp_entry_t swp_entries[])
 	/* Only single cluster request supported */
 	WARN_ON_ONCE(n_goal > 1 && cluster);
 
-<<<<<<< HEAD
-	avail_pgs = atomic_long_read(&nr_swap_pages) / nr_pages;
-=======
 #ifdef CONFIG_OPLUS_NANDSWAP
 	if (nandswap_si)
 		nandswap_avail_pgs = nandswap_si->pages - nandswap_si->inuse_pages;
 	avail_pgs = (atomic_long_read(&nr_swap_pages) - nandswap_avail_pgs) / size;
 #else
-	avail_pgs = atomic_long_read(&nr_swap_pages) / size;
+	avail_pgs = atomic_long_read(&nr_swap_pages) / nr_pages;
 #endif
->>>>>>> 89215d7b054c (treewide: import oplus changes)
 	if (avail_pgs <= 0)
 		goto noswap;
 
