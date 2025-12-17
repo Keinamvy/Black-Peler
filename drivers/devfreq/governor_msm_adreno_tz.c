@@ -63,10 +63,7 @@ static DEFINE_SPINLOCK(suspend_lock);
 
 #define TAG "msm_adreno_tz: "
 
-#if 1
-static unsigned int adrenoboost = 1;
-#endif
-
+static unsigned int adrenoboost = 2; // Medium
 
 static u64 suspend_time;
 static u64 suspend_start;
@@ -387,7 +384,7 @@ static int lvl_divider_map_3[] = {10,1,1,1,1,15,13    ,1,1};
 
 #endif
 
-static int uci_adrenoboost = 1;
+static int uci_adrenoboost = 2;
 #ifdef CONFIG_UCI
 // register user uci listener
 void uci_user_listener(void) {
@@ -443,7 +440,7 @@ static int tz_get_target_freq(struct devfreq *devfreq, unsigned long *freq)
 			priv->bin.busy_time += (unsigned int)((stats.busy_time * ( 1 + loc_adrenoboost ) * lvl_multiplicator_map_2[ last_level ]  * 7 ) / (lvl_divider_map_2[ last_level ] * 10));
 		} else {
 			priv->bin.busy_time += (unsigned int)((stats.busy_time * ( 1 + loc_adrenoboost ) * lvl_multiplicator_map_3[ last_level ]  * 8 ) / (lvl_divider_map_3[ last_level ] * 10));
-		}
+	}
 	} else {
 		priv->bin.busy_time += stats.busy_time;
 	}
