@@ -1,9 +1,0 @@
-# SPDX-License-Identifier: GPL-2.0-only
-
-config EXOTICBALANCE
-	bool "ExoticBalance IRQ Load Logger"
-	default y
-	help
-	  Enables ExoticBalance, a custom IRQ load logger with GUI toggle support.
-	  This module provides per-CPU IRQ counting and logs imbalance.
-	  Toggle will appear in Franco Kernel Manager (/sys/module/exoticbalance/parameters/enabled).
