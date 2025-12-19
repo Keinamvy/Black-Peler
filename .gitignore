@@ -137,3 +137,5 @@ build.log
 clang
 clang/
 Any*
+build.log
+KernelSU*/
