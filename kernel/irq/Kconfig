@@ -135,7 +135,5 @@ config GENERIC_IRQ_DEBUGFS
 	  developers and debugging of hard to diagnose interrupt problems.
 
 	  If you don't know what to do here, say N.
-	  
-source "kernel/irq/exoticbalance/Kconfig"
 
 endmenu
