@@ -64,23 +64,19 @@ echo -e "${YELLOW}\nInclude KernelSU (susfs)?${NC}"
 select ksu in "Yes" "No"; do
     case $ksu in
         Yes )
-            echo -e "${GREEN}Adding KernelSU Next (susfs) — safely...${NC}"
-
+            echo -e "${GREEN}Adding KernelSU (susfs-rksu-master) — safely...${NC}"
             # Download to temp file
             KSU_SCRIPT="/tmp/ksu_setup_$(date +%s).sh"
-            curl -LSs "https://raw.githubusercontent.com/Mr-Morat/KernelSU-Next/susfs/kernel/setup.sh" -o "$KSU_SCRIPT"
-
+            curl -LSs "https://raw.githubusercontent.com/rsuntk/KernelSU/main/kernel/setup.sh" -o "$KSU_SCRIPT"
             # Remove ALL possible terminal-killing lines (covers current and future variants)
             sed -i '/kill.*[[:space:]]\+$$/d' "$KSU_SCRIPT"
             sed -i '/kill.*$PPID/d' "$KSU_SCRIPT"
             sed -i '/exec[[:space:]]\+>&-/d' "$KSU_SCRIPT"
             sed -i '/exec[[:space:]]\+>&[[:space:]]*$/d' "$KSU_SCRIPT"
-            sed -i '/exit[[:space:]]\+0/d' "$KSU_SCRIPT"  # some versions fake-exit first
-
-            # Run it safely
-            bash "$KSU_SCRIPT" susfs
+            sed -i '/exit[[:space:]]\+0/d' "$KSU_SCRIPT" # some versions fake-exit first
+            # Run it safely with the new argument
+            bash "$KSU_SCRIPT" susfs-rksu-master
             rm -f "$KSU_SCRIPT"
-
             zip_prefix="${zip_prefix}_KSU"
             ksu_enabled=true
             echo -e "${GREEN}KernelSU integrated successfully${NC}"
@@ -92,7 +88,6 @@ select ksu in "Yes" "No"; do
             ;;
     esac
 done
-
 # ---------------- TOOLCHAINS ----------------
 mkdir -p toolchain
 
