@@ -39,6 +39,7 @@
 *.symtypes
 *.tar
 *.xz
+*.zip
 Module.symvers
 modules.builtin
 
@@ -139,3 +140,4 @@ clang/
 Any*
 build.log
 KernelSU*/
+drivers/kernelsu*/
