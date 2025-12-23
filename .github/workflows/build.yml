@@ -55,8 +55,9 @@ jobs:
 
       - name: Apply build type
         run: |
-          if [ "$KSU_TYPE" = "KSU" ]; then
-            git clone -b legacy https://github.com/sidex15/KernelSU-Next.git
+          git clone -b legacy https://github.com/sidex15/KernelSU-Next.git
+          if [ "$KSU_TYPE" = "NON_KSU" ]; then
+            sed -i 's/^CONFIG_KSU=y/CONFIG_KSU=n/' arch/arm64/configs/sweet_defconfig
           fi
           apply_panel_dimensions() {
               local w=$1 h=$2
