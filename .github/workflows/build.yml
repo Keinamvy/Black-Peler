@@ -50,7 +50,8 @@ jobs:
       - name: Fetch Toolchains
         run: |
           mkdir -p "$HOME/clang"
-          git clone https://gitlab.com/alphadroid-project/prebuilts_clang_host_linux-x86_clang-r547379 "$HOME/clang"
+          curl -L https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz \
+            | tar -xz -C "$HOME/clang"
 
       - name: Apply build type
         run: |
@@ -88,6 +89,7 @@ jobs:
           export KBUILD_BUILD_USER="Keinamvy"
 
           make O=out sweet_defconfig
+          cat out/.config
           make -j$(nproc --all) O=out \
             ARCH=arm64 \
             LLVM=1 \
@@ -103,13 +105,6 @@ jobs:
             CROSS_COMPILE=aarch64-linux-android- \
             CROSS_COMPILE_ARM32=arm-linux-androideabi-
 
-          mv out/.config out/${DEFCONFIG}.txt
-
-      - name: Upload defconfig
-        uses: actions/upload-artifact@v4
-        with:
-          name: defconfig-${{ env.ROM_TYPE }}-${{ env.KSU_TYPE }}-${{ env.BUILD_TIME }}
-          path: out/*.txt
 
       - name: Fetch AnyKernel3
         run: |
