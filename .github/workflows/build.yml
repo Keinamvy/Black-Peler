@@ -9,7 +9,6 @@ on:
         default: "KSU"
         type: choice
         options:
-          - KSU
           - NON_KSU
 
       rom_type:
@@ -55,9 +54,6 @@ jobs:
 
       - name: Apply build type
         run: |
-          if [ "$KSU_TYPE" = "KSU" ]; then
-            git clone -b legacy https://github.com/sidex15/KernelSU-Next.git
-          fi
           apply_panel_dimensions() {
               local w=$1 h=$2
               local files=(
