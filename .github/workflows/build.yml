@@ -10,7 +10,6 @@ on:
         type: choice
         options:
           - KSU
-          - NON_KSU
 
       rom_type:
         description: "ROM base"
@@ -55,9 +54,7 @@ jobs:
 
       - name: Apply build type
         run: |
-          if [ "$KSU_TYPE" = "KSU" ]; then
-            git clone -b legacy https://github.com/sidex15/KernelSU-Next.git
-          fi
+          git clone -b legacy https://github.com/sidex15/KernelSU-Next.git
           apply_panel_dimensions() {
               local w=$1 h=$2
               local files=(
