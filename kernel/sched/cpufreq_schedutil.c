@@ -481,7 +481,6 @@ static void sugov_update_shared(struct update_util_data *hook, u64 time,
 
 	raw_spin_unlock(&sg_policy->update_lock);
 }
-
 static void sugov_work(struct kthread_work *work)
 {
 	struct sugov_policy *sg_policy = container_of(work, struct sugov_policy, work);
