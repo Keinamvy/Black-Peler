@@ -1,0 +1,111 @@
+name: build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rom_type: MIUI
+            ksu_type: KSU
+          - rom_type: MIUI
+            ksu_type: NON_KSU
+          - rom_type: AOSP
+            ksu_type: KSU
+          - rom_type: AOSP
+            ksu_type: NON_KSU
+
+    env:
+      ROM_TYPE: ${{ matrix.rom_type }}
+      KSU_TYPE: ${{ matrix.ksu_type }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Prepare timezone
+        run: |
+          echo "BUILD_TIME=$(TZ=Asia/Jakarta date '+%d%m%Y-%H%M')" >> $GITHUB_ENV
+          sudo rm /etc/localtime
+          sudo ln -s /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
+
+      - name: Install Dependencies
+        run: |
+          sudo apt -yqq update
+          sudo apt -yqq install git make bc bison openssl curl zip kmod cpio flex \
+            libelf-dev libssl-dev libtfm-dev wget device-tree-compiler \
+            ca-certificates python3 binutils \
+            binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi xz-utils
+
+      - name: Fetch Toolchains
+        run: |
+          mkdir -p "$HOME/clang"
+          git clone https://github.com/KiTTYsh/android_prebuilts_clang_host_linux-x86_clang-r547379.git "$HOME/clang"
+
+      - name: Apply build type
+        run: |
+          git clone -b n3x7g3n-kernel https://github.com/sidex15/KernelSU-Next.git
+
+          if [ "$KSU_TYPE" = "NON_KSU" ]; then
+            sed -i 's/^CONFIG_KSU=y/CONFIG_KSU=n/' arch/arm64/configs/sweet_defconfig
+          fi
+
+          apply_panel_dimensions() {
+              local w=$1 h=$2
+              local files=(
+                  "arch/arm64/boot/dts/qcom/xiaomi/sweet/dsi-panel-k6-38-0e-0b-fhd-dsc-video.dtsi"
+                  "arch/arm64/boot/dts/qcom/xiaomi/sweet/dsi-panel-k6-38-0c-0a-fhd-dsc-video.dtsi"
+              )
+              echo -e "${CYAN}Setting panel size → ${w} × ${h} mm${NC}"
+              for f in "${files[@]}"; do
+                  [ -f "$f" ] && sed -i "s/\(qcom,mdss-pan-physical-width-dimension[[:space:]]*=[[:space:]]*< *\)[0-9]\+/\1${w}/" "$f"
+                  [ -f "$f" ] && sed -i "s/\(qcom,mdss-pan-physical-height-dimension[[:space:]]*=[[:space:]]*< *\)[0-9]\+/\1${h}/" "$f"
+              done
+          }
+          if [ "$ROM_TYPE" = "MIUI" ]; then
+            apply_panel_dimensions 695 1546
+          else
+            apply_panel_dimensions 70 155
+          fi
+
+      - name: Build Kernel
+        run: |
+          export PATH="$HOME/clang/bin:$PATH"
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export KBUILD_BUILD_HOST=Ubuntu
+          export KBUILD_BUILD_USER=Keinamvy
+
+          make O=out sweet_defconfig
+          make -j$(nproc --all) O=out \
+            ARCH=arm64 \
+            LLVM=1 \
+            LLVM_IAS=1 \
+            AR=llvm-ar \
+            NM=llvm-nm \
+            LD=ld.lld \
+            OBJCOPY=llvm-objcopy \
+            OBJDUMP=llvm-objdump \
+            STRIP=llvm-strip \
+            CC=clang \
+            CLANG_TRIPLE=aarch64-linux-gnu- \
+            CROSS_COMPILE=aarch64-linux-android- \
+            CROSS_COMPILE_ARM32=arm-linux-androideabi-
+
+      - name: Fetch AnyKernel3
+        run: |
+          git clone --depth=1 https://github.com/MiDoNaSR545/anykernel3 -b main AnyKernel3
+          cp out/arch/arm64/boot/Image.gz AnyKernel3/
+          cp out/arch/arm64/boot/dtbo.img AnyKernel3/
+          cp out/arch/arm64/boot/dtb.img AnyKernel3/
+
+      - name: Upload Kernel
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeMeDo-${{ env.ROM_TYPE }}-${{ env.KSU_TYPE }}-${{ env.BUILD_TIME }}
+          path: AnyKernel3/*
