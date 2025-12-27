@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-
 # ---------------- COLORS ----------------
 GREEN="\e[32m"
 YELLOW="\e[33m"
@@ -10,15 +9,12 @@ CYAN="\e[36m"
 MAGENTA="\e[35m"
 BOLD="\e[1m"
 NC="\e[0m"
-
 clear
 echo -e "${BLUE}╔══════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}    MeMeDo Kernel • sweet_k6a                     ${NC}"
-echo -e "${GREEN}    Redmi Note 12 Pro / Pro+ 5G                   ${NC}"
+echo -e "${GREEN} MeMeDo Kernel • sweet_k6a ${NC}"
+echo -e "${GREEN} Redmi Note 12 Pro / Pro+ 5G ${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════════════════╝${NC}"
-
 START_TIME=$(date +%s)
-
 # ---------------- CLEAN BUILD PROMPT ----------------
 echo -e "${YELLOW}Do you want a clean build? (highly recommended)${NC}"
 select clean_choice in "Yes (clean build)" "No (incremental)"; do
@@ -39,7 +35,6 @@ select clean_choice in "Yes (clean build)" "No (incremental)"; do
             ;;
     esac
 done
-
 # ---------------- REQUIREMENTS (only if clean) ----------------
 if [[ "$CLEAN_BUILD" == true ]]; then
     echo -e "${YELLOW}Installing/updating required packages...${NC}"
@@ -48,7 +43,6 @@ if [[ "$CLEAN_BUILD" == true ]]; then
         libncurses5-dev lld lzma python3 unzip wget xz-utils zip \
         gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu >/dev/null 2>&1
 fi
-
 # ---------------- BUILD TYPE ----------------
 echo -e "${YELLOW}\nSelect build type:${NC}"
 select buildtype in "AOSP" "MIUI/OEM"; do
@@ -57,29 +51,27 @@ select buildtype in "AOSP" "MIUI/OEM"; do
         "MIUI/OEM" ) zip_prefix="MIUI"; break;;
     esac
 done
-
-# ---------------- KERNELSU (100% SAFE — WORKS FIRST TIME) ----------------
+# ---------------- KERNELSU (RKSU with susfs) ----------------
 ksu_enabled=false
-echo -e "${YELLOW}\nInclude KernelSU (susfs)?${NC}"
+ksu_repo_dir=""
+echo -e "${YELLOW}\nInclude KernelSU (RKSU susfs-rksu-master)?${NC}"
 select ksu in "Yes" "No"; do
     case $ksu in
         Yes )
-            echo -e "${GREEN}Adding KernelSU (susfs-rksu-master) — safely...${NC}"
-            # Download to temp file
+            echo -e "${GREEN}Adding RKSU (rsuntk fork • susfs-rksu-master)...${NC}"
             KSU_SCRIPT="/tmp/ksu_setup_$(date +%s).sh"
             curl -LSs "https://raw.githubusercontent.com/rsuntk/KernelSU/main/kernel/setup.sh" -o "$KSU_SCRIPT"
-            # Remove ALL possible terminal-killing lines (covers current and future variants)
-            sed -i '/kill.*[[:space:]]\+$$/d' "$KSU_SCRIPT"
-            sed -i '/kill.*$PPID/d' "$KSU_SCRIPT"
-            sed -i '/exec[[:space:]]\+>&-/d' "$KSU_SCRIPT"
-            sed -i '/exec[[:space:]]\+>&[[:space:]]*$/d' "$KSU_SCRIPT"
-            sed -i '/exit[[:space:]]\+0/d' "$KSU_SCRIPT" # some versions fake-exit first
-            # Run it safely with the new argument
             bash "$KSU_SCRIPT" susfs-rksu-master
             rm -f "$KSU_SCRIPT"
+            # Detect cloned directory (usually KernelSU)
+            if [[ -d "KernelSU" ]]; then
+                ksu_repo_dir="KernelSU"
+            elif [[ -d "KernelSU-Next" ]]; then
+                ksu_repo_dir="KernelSU-Next"
+            fi
             zip_prefix="${zip_prefix}_KSU"
             ksu_enabled=true
-            echo -e "${GREEN}KernelSU integrated successfully${NC}"
+            echo -e "${GREEN}RKSU (susfs) integrated successfully${NC}"
             break
             ;;
         No )
@@ -90,7 +82,6 @@ select ksu in "Yes" "No"; do
 done
 # ---------------- TOOLCHAINS ----------------
 mkdir -p toolchain
-
 if [ ! -d "clang" ]; then
     echo -e "${YELLOW}Downloading Clang r547379...${NC}"
     mkdir -p clang
@@ -98,7 +89,6 @@ if [ ! -d "clang" ]; then
 else
     echo -e "${GREEN}Clang ready${NC}"
 fi
-
 for dir in gcc64 gcc32; do
     if [ ! -d "$dir" ]; then
         echo -e "${YELLOW}Cloning $dir toolchain...${NC}"
@@ -107,7 +97,6 @@ for dir in gcc64 gcc32; do
         echo -e "${GREEN}$dir ready${NC}"
     fi
 done
-
 # ---------------- ENVIRONMENT ----------------
 export ARCH=arm64
 export SUBARCH=arm64
@@ -135,6 +124,11 @@ apply_panel_dimensions() {
     done
 }
 
+revert_panel_dimensions() {
+    echo -e "${CYAN}Reverting panel dimensions to original (695 × 1546 mm)...${NC}"
+    apply_panel_dimensions 695 1546
+}
+
 echo -e "${YELLOW}\nApplying panel dimensions...${NC}"
 if [[ "$buildtype" == "AOSP" ]]; then
     apply_panel_dimensions 70 155
@@ -153,28 +147,51 @@ make -j$(nproc --all) O=out \
 # ---------------- VERIFY ----------------
 KERNEL_IMG="out/arch/arm64/boot/Image.gz"
 DTBO_IMG="out/arch/arm64/boot/dtbo.img"
-
 [[ ! -f "$KERNEL_IMG" || ! -f "$DTBO_IMG" ]] && {
     echo -e "${RED}BUILD FAILED — missing Image.gz or dtbo.img${NC}"
     exit 1
 }
-
 cp out/.config out/sweet_defconfig.txt
 
 # ---------------- PACKAGING ----------------
 ZIPNAME="${zip_prefix}-MeMeDo-sweet_k6a-$(date '+%Y%m%d-%H%M').zip"
 echo -e "${YELLOW}\nPackaging → $ZIPNAME${NC}"
-
 rm -rf AnyKernel3
 git clone --depth=1 https://github.com/MiDoNaSR545/AnyKernel3 || git clone --depth=1 https://github.com/osm0sis/AnyKernel3 AnyKernel3
 cp "$KERNEL_IMG" "$DTBO_IMG" out/arch/arm64/boot/dtb.img AnyKernel3/ 2>/dev/null || true
-
 cd AnyKernel3
 zip -r9 "../$ZIPNAME" . -x ".git/*" "README.md" "*.zip" >/dev/null
 cd ..
 echo -e "${GREEN}Zip created: $ZIPNAME${NC}"
 
+# ---------------- CLEANUP SOURCE TREE ----------------
+revert_panel_dimensions
+
+if [[ "$ksu_enabled" == true ]]; then
+    echo -e "${YELLOW}Fully cleaning up RKSU (susfs) integration...${NC}"
+    DRIVER_DIR="drivers"
+    [ -L "$DRIVER_DIR/kernelsu" ] && rm -f "$DRIVER_DIR/kernelsu" && echo -e "${CYAN}[-] Symlink removed${NC}"
+    # Revert Makefile
+    sed -i '/obj-$(CONFIG_KSU) += kernelsu/d' "$DRIVER_DIR/Makefile" && echo -e "${CYAN}[-] Makefile cleaned${NC}"
+    # Revert Kconfig
+    sed -i '/source "drivers\/kernelsu\/Kconfig"/d' "$DRIVER_DIR/Kconfig" && echo -e "${CYAN}[-] Kconfig cleaned${NC}"
+    # Delete cloned repo folder
+    if [[ -n "$ksu_repo_dir" && -d "$ksu_repo_dir" ]]; then
+        rm -rf "$ksu_repo_dir" && echo -e "${CYAN}[-] $ksu_repo_dir directory deleted${NC}"
+    else
+        # Fallback for common names
+        rm -rf KernelSU KernelSU-Next 2>/dev/null && echo -e "${CYAN}[-] KernelSU directories deleted (fallback)${NC}"
+    fi
+    echo -e "${GREEN}RKSU cleanup complete — source tree fully restored${NC}"
+fi
+
 # ---------------- PIXELDRAIN UPLOAD ----------------
+if [[ -z "$PIXELDRAIN_API_KEY" ]]; then
+    echo -e "${YELLOW}PixelDrain API key not set. Please enter it now (or press Enter to skip upload):${NC}"
+    read -s -r PIXELDRAIN_API_KEY
+    echo
+fi
+
 if [[ -n "$PIXELDRAIN_API_KEY" ]]; then
     echo -e "${YELLOW}Uploading to PixelDrain...${NC}"
     RES=$(curl -s -u ":$PIXELDRAIN_API_KEY" -F "file=@$ZIPNAME" https://pixeldrain.com/api/file)
@@ -186,8 +203,8 @@ fi
 END_TIME=$(date +%s)
 echo -e "${MAGENTA}${BOLD}"
 echo "╔══════════════════════════════════════════════════╗"
-echo "       BUILD SUCCESSFUL in $((END_TIME - START_TIME)) seconds!       "
-echo "       $ZIPNAME      "
-[[ -n "$ID" && "$ID" != "null" ]] && echo "       https://pixeldrain.com/u/$ID      "
+echo " BUILD SUCCESSFUL in $((END_TIME - START_TIME)) seconds! "
+echo " $ZIPNAME "
+[[ -n "$ID" && "$ID" != "null" ]] && echo " https://pixeldrain.com/u/$ID "
 echo "╚══════════════════════════════════════════════════╝"
 echo -e "${NC}"
