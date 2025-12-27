@@ -49,7 +49,7 @@ jobs:
 
       - name: Apply build type
         run: |
-          git clone -b n3x7g3n-kernel https://github.com/sidex15/KernelSU-Next.git
+          git clone -b rksu105-susfs1512 https://github.com/Keinamvy/KernelSU.git KernelSU-Next
 
           if [ "$KSU_TYPE" = "NON_KSU" ]; then
             sed -i 's/^CONFIG_KSU=y/CONFIG_KSU=n/' arch/arm64/configs/sweet_defconfig
