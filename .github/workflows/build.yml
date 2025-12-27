@@ -53,7 +53,7 @@ jobs:
 
       - name: Apply build type
         run: |
-          git clone -b n3x7g3n-kernel https://github.com/sidex15/KernelSU-Next.git
+          git clone -b rksu105-susfs1512 https://github.com/Keinamvy/KernelSU
           apply_panel_dimensions() {
               local w=$1 h=$2
               local files=(
