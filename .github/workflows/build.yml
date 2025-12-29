@@ -36,16 +36,21 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          sudo apt -yqq update
-          sudo apt -yqq install git make bc bison openssl curl zip kmod cpio flex \
-            libelf-dev libssl-dev libtfm-dev wget device-tree-compiler \
-            ca-certificates python3 binutils \
-            binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi xz-utils
+          sudo apt-get update -qq -y
+          sudo apt-get install -qq -y bc bison build-essential ccache cpio curl flex git libelf-dev libssl-dev \
+              libncurses5-dev lld lzma python3 unzip wget xz-utils zip jq zstd libxml2-dev \
+              gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu >/dev/null 2>&1
 
       - name: Fetch Toolchains
         run: |
-          mkdir -p "$HOME/clang"
-          git clone https://github.com/KiTTYsh/android_prebuilts_clang_host_linux-x86_clang-r547379.git "$HOME/clang"
+          mkdir -p clang && cd clang
+          curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
+          chmod a+x antman
+          ./antman -S || true
+          ./antman --patch=glibc || true
+          cd ..
+          git clone https://github.com/greenforce-project/gcc-arm -b main --depth=1 "gcc32"
+          git clone https://github.com/greenforce-project/gcc-arm64 -b main --depth=1 "gcc64"
 
       - name: Apply build type
         run: |
@@ -75,34 +80,28 @@ jobs:
 
       - name: Build Kernel
         run: |
-          export PATH="$HOME/clang/bin:$PATH"
           export ARCH=arm64
           export SUBARCH=arm64
+          export PATH="${PWD}/clang/bin:${PWD}/gcc64/bin:${PWD}/gcc32/bin:${PATH}"
           export KBUILD_BUILD_HOST=Ubuntu
           export KBUILD_BUILD_USER=Keinamvy
-
+          export LLVM=1 LLVM_IAS=1
+          export CLANG_TRIPLE=aarch64-linux-gnu-
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+          export USE_CCACHE=1
+          ccache -M 50G >/dev/null 2>&1 || true
+          export KCFLAGS="-O3"
+          export LTO=thin
           make O=out sweet_defconfig
           make -j$(nproc --all) O=out \
-            ARCH=arm64 \
-            LLVM=1 \
-            LLVM_IAS=1 \
-            AR=llvm-ar \
-            NM=llvm-nm \
-            LD=ld.lld \
-            OBJCOPY=llvm-objcopy \
-            OBJDUMP=llvm-objdump \
-            STRIP=llvm-strip \
-            CC=clang \
-            CLANG_TRIPLE=aarch64-linux-gnu- \
-            CROSS_COMPILE=aarch64-linux-android- \
-            CROSS_COMPILE_ARM32=arm-linux-androideabi-
+            CC=clang LD=ld.lld NM=llvm-nm OBJCOPY=llvm-objcopy
 
       - name: Fetch AnyKernel3
         run: |
           git clone --depth=1 https://github.com/MiDoNaSR545/anykernel3 -b main AnyKernel3
           cp out/arch/arm64/boot/Image.gz AnyKernel3/
           cp out/arch/arm64/boot/dtbo.img AnyKernel3/
-          cp out/arch/arm64/boot/dtb.img AnyKernel3/
 
       - name: Upload Kernel
         uses: actions/upload-artifact@v4
