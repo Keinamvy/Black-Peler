@@ -20,7 +20,6 @@
 #include <linux/uaccess.h>
 #include <linux/mm_inline.h>
 #include <linux/ctype.h>
-#include <linux/pkeys.h>
 
 #include <asm/elf.h>
 #include <asm/tlb.h>
